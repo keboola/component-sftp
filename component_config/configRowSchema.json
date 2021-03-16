@@ -1,1 +1,32 @@
-{}
+{
+	"type": "object",
+	"title": "SFTP writer",
+	"required": [
+		"path",
+		"append_date"
+	],
+	"properties": {
+		"path": {
+			"type": "string",
+			"title": "Remote destination path",
+			"description" : "e.g. /home/user/sftp/",
+			"propertyOrder": 60
+		},
+		"append_date": {
+						"type": "number",
+						"title": "Append timestamp",
+						"description": "Appends timestamp to result file name",
+						"propertyOrder": 5200,
+						"enum": [
+							0,
+							1
+						],
+						"default": 0,
+						"options": {
+							"enum_titles": [
+								"No",
+								"Yes"
+							]
+					}}
+	}
+}
