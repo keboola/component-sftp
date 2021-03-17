@@ -66,6 +66,9 @@ class Component(KBCEnvHandler):
         Main execution code
         '''
         params = self.cfg_params  # noqa
+        print()
+        print(params)
+        print()
         pkey = None
         if params[KEY_PRIVATE_KEY]:
             keyfile = StringIO(params[KEY_PRIVATE_KEY])
