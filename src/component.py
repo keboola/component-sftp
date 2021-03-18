@@ -35,6 +35,10 @@ REQUIRED_IMAGE_PARS = []
 APP_VERSION = '0.0.3'
 
 
+class UserException(Exception):
+    pass
+
+
 def get_local_data_path():
     return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
 
@@ -77,7 +81,11 @@ class Component(CommonInterface):
         pkey = None
         if params[KEY_PRIVATE_KEY]:
             keyfile = StringIO(params[KEY_PRIVATE_KEY])
-            pkey = _parse_private_key(keyfile)
+            try:
+                pkey = _parse_private_key(keyfile)
+            except (paramiko.SSHException, IndexError):
+                logging.error("Private Key invalid")
+                exit(1)
         # ## SFTP Connection ###
         port = params[KEY_PORT]
         conn = paramiko.Transport((params[KEY_HOSTNAME], port))
@@ -135,7 +143,7 @@ def _parse_private_key(keyfile):
         try:
             pkey = paramiko.DSSKey.from_private_key(keyfile)
             failed = False
-        except paramiko.SSHException:
+        except (paramiko.SSHException, IndexError):
             logging.warning("DSS Private key invalid, trying ECDSAKey.")
             failed = True
     # ECDSAKey
@@ -143,14 +151,14 @@ def _parse_private_key(keyfile):
         try:
             pkey = paramiko.ECDSAKey.from_private_key(keyfile)
             failed = False
-        except paramiko.SSHException:
+        except (paramiko.SSHException, IndexError):
             logging.warning("ECDSAKey Private key invalid, trying Ed25519Key.")
             failed = True
     # Ed25519Key
     if failed:
         try:
             pkey = paramiko.Ed25519Key.from_private_key(keyfile)
-        except paramiko.SSHException as e:
+        except (paramiko.SSHException, IndexError) as e:
             logging.warning("Ed25519Key Private key invalid.")
             raise e
 
