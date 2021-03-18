@@ -34,6 +34,9 @@ REQUIRED_IMAGE_PARS = []
 
 APP_VERSION = '0.0.3'
 
+class UserException(Exception):
+    pass
+
 
 def get_local_data_path():
     return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
@@ -57,7 +60,7 @@ class Component(CommonInterface):
             self.validate_configuration(REQUIRED_PARAMETERS)
             self.validate_image_parameters(REQUIRED_IMAGE_PARS)
         except ValueError as e:
-            logging.exception(e)
+            raise UserException(e)
             exit(1)
 
         if self.configuration.parameters.get(KEY_DEBUG):
