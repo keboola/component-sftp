@@ -77,7 +77,7 @@ class Component(CommonInterface):
         pkey = None
         if params[KEY_PRIVATE_KEY]:
             keyfile = StringIO(params[KEY_PRIVATE_KEY])
-            pkey = self._parse_private_key(keyfile)
+            pkey = _parse_private_key(keyfile)
         # ## SFTP Connection ###
         port = params[KEY_PORT]
         conn = paramiko.Transport((params[KEY_HOSTNAME], port))
@@ -92,6 +92,7 @@ class Component(CommonInterface):
 
         for fl in in_tables + in_files:
             self._upload_file(fl, sftp)
+
 
         sftp.close()
         conn.close()
