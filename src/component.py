@@ -93,7 +93,6 @@ class Component(CommonInterface):
         for fl in in_tables + in_files:
             self._upload_file(fl, sftp)
 
-
         sftp.close()
         conn.close()
         logging.info("Done.")
