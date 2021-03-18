@@ -34,6 +34,7 @@ REQUIRED_IMAGE_PARS = []
 
 APP_VERSION = '0.0.3'
 
+
 class UserException(Exception):
     pass
 
