@@ -84,13 +84,18 @@ class Component(CommonInterface):
             try:
                 pkey = _parse_private_key(keyfile)
             except (paramiko.SSHException, IndexError):
-                logging.error("Private Key invalid")
+                logging.error("Private Key is invalid")
                 exit(1)
         # ## SFTP Connection ###
         port = params[KEY_PORT]
         conn = paramiko.Transport((params[KEY_HOSTNAME], port))
 
-        conn.connect(username=params[KEY_USER], password=params[KEY_PASSWORD], pkey=pkey)
+        try:
+            conn.connect(username=params[KEY_USER], password=params[KEY_PASSWORD], pkey=pkey)
+        except paramiko.ssh_exception.AuthenticationException:
+            logging.error("Authentication failed, please recheck your authentication parameters")
+            exit(1)
+
         sftp = paramiko.SFTPClient.from_transport(conn)
 
         in_tables = self.get_in_tables()  # noqa
