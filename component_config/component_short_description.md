@@ -1,1 +1,1 @@
-Transfer tables and files from the Storage to any SFTP repository.
+Transfer tables and files to any SFTP repository.

@@ -118,23 +118,23 @@ class Component(CommonInterface):
     def _upload_file(self, file, sftp):
         params = self.configuration.parameters
         now = ''
-        filepath = params[KEY_REMOTE_PATH]
+        path = params[KEY_REMOTE_PATH]
         if params.get(KEY_APPENDDATE):
             now = "_" + str(datetime.utcnow().strftime('%Y%m%d%H%M%S'))
-        if not filepath[-1] == "/":
-            filepath = filepath + "/"
+        if not path[-1] == "/":
+            path = path + "/"
         filename, file_extension = os.path.splitext(os.path.basename(file))
-        destination = filepath + filename + now + file_extension
+        destination = path + filename + now + file_extension
         logging.info("File Source: %s", file)
         logging.info("File Destination: %s", destination)
         try:
             self._try_to_execute_sftp_operation(sftp.put, file, destination)
         except FileNotFoundError:
-            logging.error("Directory in SFTP Server not found, recheck the remote destination path")
+            logging.error(f"Destination path: '{path}' in SFTP Server not found, recheck the remote destination path")
             exit(1)
 
     @backoff.on_exception(backoff.expo,
-                          IOError,
+                          ConnectionError,
                           max_tries=MAX_RETRIES)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
