@@ -32,11 +32,7 @@ REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP,
 
 REQUIRED_IMAGE_PARS = []
 
-APP_VERSION = '0.0.3'
-
-
-class UserException(Exception):
-    pass
+APP_VERSION = '1.0.0'
 
 
 def get_local_data_path():
@@ -50,20 +46,28 @@ def get_data_folder_path():
     return data_folder_path
 
 
+def connect_to_server(port, host, user, password, pkey):
+    conn = paramiko.Transport((host, port))
+    try:
+        conn.connect(username=user, password=password, pkey=pkey)
+    except paramiko.ssh_exception.AuthenticationException:
+        logging.error('Authentication failed: recheck your authentication parameters')
+        exit(1)
+    sftp = paramiko.SFTPClient.from_transport(conn)
+    return sftp, conn
+
+
 class Component(CommonInterface):
     def __init__(self):
         # for easier local project setup
         data_folder_path = get_data_folder_path()
         super().__init__(data_folder_path=data_folder_path)
-
         try:
-            # validation of required parameters. Produces ValueError
             self.validate_configuration(REQUIRED_PARAMETERS)
             self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        except ValueError as e:
-            logging.error(e)
+        except ValueError as err:
+            logging.error(err)
             exit(1)
-
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
 
@@ -79,6 +83,7 @@ class Component(CommonInterface):
         '''
         params = self.configuration.parameters
         pkey = None
+
         if params[KEY_PRIVATE_KEY]:
             keyfile = StringIO(params[KEY_PRIVATE_KEY])
             try:
@@ -86,20 +91,14 @@ class Component(CommonInterface):
             except (paramiko.SSHException, IndexError):
                 logging.error("Private Key is invalid")
                 exit(1)
-        # ## SFTP Connection ###
-        port = params[KEY_PORT]
-        conn = paramiko.Transport((params[KEY_HOSTNAME], port))
 
-        try:
-            conn.connect(username=params[KEY_USER], password=params[KEY_PASSWORD], pkey=pkey)
-        except paramiko.ssh_exception.AuthenticationException:
-            logging.error("Authentication failed, please recheck your authentication parameters")
-            exit(1)
+        sftp, conn = connect_to_server(params[KEY_PORT],
+                                       params[KEY_HOSTNAME],
+                                       params[KEY_USER],
+                                       params[KEY_PASSWORD],
+                                       pkey)
 
-        sftp = paramiko.SFTPClient.from_transport(conn)
-
-        in_tables = self.get_in_tables()  # noqa
-
+        in_tables = self.get_in_tables()
         in_files_per_tag = self.get_input_file_definitions_grouped_by_tag_group(only_latest_files=True)
         in_files = [item.full_path for sublist in in_files_per_tag.values() for item in sublist]
 
@@ -119,13 +118,20 @@ class Component(CommonInterface):
     def _upload_file(self, file, sftp):
         params = self.configuration.parameters
         now = ''
+        filepath = params[KEY_REMOTE_PATH]
         if params.get(KEY_APPENDDATE):
             now = "_" + str(datetime.utcnow().strftime('%Y%m%d%H%M%S'))
+        if not filepath[-1] == "/":
+            filepath = filepath + "/"
         filename, file_extension = os.path.splitext(os.path.basename(file))
-        destination = params[KEY_REMOTE_PATH] + filename + now + file_extension
+        destination = filepath + filename + now + file_extension
         logging.info("File Source: %s", file)
         logging.info("File Destination: %s", destination)
-        self._try_to_execute_sftp_operation(sftp.put, file, destination)
+        try:
+            self._try_to_execute_sftp_operation(sftp.put, file, destination)
+        except FileNotFoundError:
+            logging.error("Directory in SFTP Server not found, recheck the remote destination path")
+            exit(1)
 
     @backoff.on_exception(backoff.expo,
                           IOError,
