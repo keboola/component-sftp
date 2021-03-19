@@ -66,7 +66,7 @@ class Component(CommonInterface):
             self.validate_configuration(REQUIRED_PARAMETERS)
             self.validate_image_parameters(REQUIRED_IMAGE_PARS)
         except ValueError as err:
-            logging.error(err)
+            logging.exception(err)
             exit(1)
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
@@ -130,7 +130,12 @@ class Component(CommonInterface):
         try:
             self._try_to_execute_sftp_operation(sftp.put, file, destination)
         except FileNotFoundError:
-            logging.error(f"Destination path: '{path}' in SFTP Server not found, recheck the remote destination path")
+            logging.exception(
+                f"Destination path: '{path}' in SFTP Server not found, recheck the remote destination path")
+            exit(1)
+        except PermissionError:
+            logging.exception(f"Permission Error: you do not have permissions to write to '{path}', "
+                              f"choose a different directory on the SFTP server")
             exit(1)
 
     @backoff.on_exception(backoff.expo,
