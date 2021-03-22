@@ -98,12 +98,11 @@ class Component(CommonInterface):
                                        params[KEY_PASSWORD],
                                        pkey)
 
-        in_tables = self.get_in_tables()
+        in_tables = self.get_input_tables_definitions()
         in_files_per_tag = self.get_input_file_definitions_grouped_by_tag_group(only_latest_files=True)
-        in_file_names = [self.files_in_path + "/" + item.name for sublist
-                         in in_files_per_tag.values() for item in sublist]
+        in_files = [item for sublist in in_files_per_tag.values() for item in sublist]
 
-        for fl in in_tables + in_file_names:
+        for fl in in_tables + in_files:
             self._upload_file(fl, sftp)
 
         sftp.close()
@@ -126,12 +125,12 @@ class Component(CommonInterface):
         if not path[-1] == "/":
             path = path + "/"
 
-        filename, file_extension = os.path.splitext(os.path.basename(input_file))
+        filename, file_extension = os.path.splitext(os.path.basename(input_file.name))
         destination = path + filename + now + file_extension
         logging.info("File Source: %s", input_file)
         logging.info("File Destination: %s", destination)
         try:
-            self._try_to_execute_sftp_operation(sftp.put, input_file, destination)
+            self._try_to_execute_sftp_operation(sftp.put, input_file.full_path, destination)
         except FileNotFoundError:
             logging.exception(
                 f"Destination path: '{path}' in SFTP Server not found, recheck the remote destination path")
