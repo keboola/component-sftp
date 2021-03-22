@@ -47,11 +47,15 @@ def get_data_folder_path():
 
 
 def connect_to_server(port, host, user, password, pkey):
-    conn = paramiko.Transport((host, port))
+    try:
+        conn = paramiko.Transport((host, port))
+    except paramiko.ssh_exception.SSHException:
+        logging.error('Connection failed: recheck your host URL and port parameters')
+        exit(1)
     try:
         conn.connect(username=user, password=password, pkey=pkey)
     except paramiko.ssh_exception.AuthenticationException:
-        logging.error('Authentication failed: recheck your authentication parameters')
+        logging.error('Connection failed: recheck your authentication and host URL parameters')
         exit(1)
     sftp = paramiko.SFTPClient.from_transport(conn)
     return sftp, conn
