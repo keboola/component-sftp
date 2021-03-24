@@ -8,12 +8,18 @@ import mock
 import os
 from freezegun import freeze_time
 from io import StringIO
-import src.component as cp
+from os import path
+from os.path import dirname
 
 from src.component import Component
 
+TEST_DIR = path.join(dirname(path.realpath(__file__)), 'test_data')
+
 
 class TestComponent(unittest.TestCase):
+    @mock.patch.dict(os.environ, {'KBC_DATADIR': TEST_DIR})
+    def setUp(self):
+        self.comp = Component()
 
     # set global time to 2010-10-10 - affects functions like datetime.now()
     @freeze_time("2010-10-10")
@@ -25,20 +31,17 @@ class TestComponent(unittest.TestCase):
             comp.run()
 
     @freeze_time("2010-10-10")
-    def test_get_append_timestamp(self):
-        timestamp = cp.get_append_timestamp(True)
-        self.assertEqual("_20101010000000", timestamp)
-
-    def test_fix_path(self):
-        self.assertEqual(cp.fix_path("/test"), "/test/")
-        self.assertEqual(cp.fix_path("/test/"), "/test/")
+    def test_get_output_destination(self):
+        input_table = self.comp.get_input_tables_definitions()[0]
+        output_destination = self.comp.get_output_destination(input_table)
+        self.assertEqual(output_destination, "/path/test_20101010000000.csv")
 
     def test_parse_private_key_throws_error_on_invalid_key(self):
         with self.assertRaises(IndexError):
-            cp._parse_private_key(StringIO("key"))
+            self.comp.get_private_key("key")
 
     def test_parse_private_key_throws_error_on_invalid_key(self):
-        key = cp._parse_private_key(StringIO(
+        key = self.comp.get_private_key(
             "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAsH4Y5UUUCHiD7OkNEjHhZeqOnbIv2/Sr3jzz+DrkGvAlEGwT"
             "\n7btrqWuqZT/cX3x1B0wiMqu3zMC+78Gy5bdNau7BJpN5FjwAzzDKVArR47ZIlyKO\nKGhRvafq2pZGQh9YUYsECzA2yoJdJTMfc"
             "/D1x1K6BGSXd7hnFDNtyMiXu9/7KRQ8\nHNZ8R78BNp7lrzV0fLMC/61n5mmXxXTVS2z6JCr8fSxNaYEEqt2aZra6Rl6c9D7O"
@@ -59,11 +62,11 @@ class TestComponent(unittest.TestCase):
             "/ytUuCruOdlulWLO1u9Thn4czLY8TKXiSxhQQ7JsYcwSk6kseV6Hv\n1RMqOOxPzG5ma85k8umOOdsRzh+Nh"
             "/smDMQRvtdYcQlu1ELfoU3EoMNl5EPYyueX\nCa/1AoGAZpHrBNdvroylQnwx7zKfr6SjZXF5ILRc6HfaZqGymGOTdoYIKSC3wQhW"
             "\nPwSfz6myqmw5xduj1QGNPrFFX5xjsTk6YKvbsFP75YnWEWrCCvFS3CFh337VqKSz\no/Jn20IHb/dgZLP5Ff+QeqtbN"
-            "/0hBvJeqp7LX3Rdd0EOq1q9OpE=\n-----END RSA PRIVATE KEY-----"))
+            "/0hBvJeqp7LX3Rdd0EOq1q9OpE=\n-----END RSA PRIVATE KEY-----")
         self.assertEqual(key.size, 2048)
 
     def test_get_private_key_with_none(self):
-        key = cp.get_private_key("")
+        key = self.comp.get_private_key("")
         self.assertEqual(key, None)
 
 
