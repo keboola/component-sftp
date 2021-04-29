@@ -32,11 +32,9 @@ REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP,
 
 REQUIRED_IMAGE_PARS = []
 
-APP_VERSION = '1.0.0'
+APP_VERSION = '1.1.0'
 
 
-def get_local_data_path():
-    return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
 
 
 def get_data_folder_path():
@@ -45,12 +43,16 @@ def get_data_folder_path():
         data_folder_path = get_local_data_path()
     return data_folder_path
 
+def get_local_data_path():
+    return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
+
 
 class Component(CommonInterface):
     def __init__(self):
         # for easier local project setup
         data_folder_path = get_data_folder_path()
         super().__init__(data_folder_path=data_folder_path)
+        self.set_gelf_logger(stdout=True)
         try:
             self.validate_configuration(REQUIRED_PARAMETERS)
             self.validate_image_parameters(REQUIRED_IMAGE_PARS)
