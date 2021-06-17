@@ -80,8 +80,7 @@ class Component(CommonInterface):
                                             pkey)
 
         in_tables = self.get_input_tables_definitions()
-        in_files_per_tag = self.get_input_file_definitions_grouped_by_tag_group(only_latest_files=True)
-        in_files = [item for sublist in in_files_per_tag.values() for item in sublist]
+        in_files = self.get_input_files_definitions(only_latest_files=True)
 
         for fl in in_tables + in_files:
             self._upload_file(fl, sftp)
