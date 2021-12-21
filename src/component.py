@@ -23,16 +23,20 @@ KEY_PORT = 'port'
 KEY_REMOTE_PATH = 'path'
 KEY_APPENDDATE = 'append_date'
 KEY_PRIVATE_KEY = '#private_key'
+# img parameter names
+KEY_HOSTNAME_IMG = 'sftp_host'
+KEY_PORT_IMG = 'sftp_port'
 
 KEY_DEBUG = 'debug'
 PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
 
-REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP,
-                       KEY_HOSTNAME, KEY_REMOTE_PATH, KEY_PORT]
-
-REQUIRED_IMAGE_PARS = []
+REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP, KEY_REMOTE_PATH]
 
 APP_VERSION = '1.0.0'
+
+
+class UserException(Exception):
+    pass
 
 
 def get_local_data_path():
@@ -51,14 +55,11 @@ class Component(CommonInterface):
         # for easier local project setup
         data_folder_path = get_data_folder_path()
         super().__init__(data_folder_path=data_folder_path)
-        try:
-            self.validate_configuration(REQUIRED_PARAMETERS)
-            self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        except ValueError as err:
-            logging.exception(err)
-            exit(1)
         if self.configuration.parameters.get(KEY_DEBUG):
             self.set_debug_mode()
+
+        self._connection: paramiko.Transport = None
+        self._sftp_client: paramiko.SFTPClient = None
 
     @staticmethod
     def set_debug_mode():
@@ -66,42 +67,59 @@ class Component(CommonInterface):
         logging.info('Running version %s', APP_VERSION)
         logging.info('Loading configuration...')
 
+    def _validate_parameters(self):
+        try:
+            self.validate_configuration(REQUIRED_PARAMETERS)
+            if self.configuration.image_parameters:
+                self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
+            else:
+                self.validate_configuration([KEY_PORT, KEY_HOSTNAME])
+        except ValueError as err:
+            raise UserException(err) from err
+
     def run(self):
         '''
         Main execution code
         '''
+        self._validate_parameters()
         params = self.configuration.parameters
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
 
-        sftp, conn = self.connect_to_server(params[KEY_PORT],
-                                            params[KEY_HOSTNAME],
-                                            params[KEY_USER],
-                                            params[KEY_PASSWORD],
-                                            pkey)
+        self.connect_to_server(self.configuration.image_parameters[KEY_PORT],
+                               self.configuration.image_parameters[KEY_HOSTNAME],
+                               params[KEY_USER],
+                               params[KEY_PASSWORD],
+                               pkey)
+        try:
+            in_tables = self.get_input_tables_definitions()
+            in_files = self.get_input_files_definitions(only_latest_files=True)
 
-        in_tables = self.get_input_tables_definitions()
-        in_files = self.get_input_files_definitions(only_latest_files=True)
+            for fl in in_tables + in_files:
+                self._upload_file(fl)
+        except Exception:
+            raise
+        finally:
+            self._close_connection()
 
-        for fl in in_tables + in_files:
-            self._upload_file(fl, sftp)
-
-        sftp.close()
-        conn.close()
         logging.info("Done.")
 
-    @staticmethod
-    def connect_to_server(port, host, user, password, pkey):
+    def connect_to_server(self, port, host, user, password, pkey):
         try:
             conn = paramiko.Transport((host, port))
             conn.connect(username=user, password=password, pkey=pkey)
-        except paramiko.ssh_exception.AuthenticationException:
-            logging.error('Connection failed: recheck your authentication and host URL parameters')
-            exit(1)
-        except paramiko.ssh_exception.SSHException:
-            logging.error('Connection failed: recheck your host URL and port parameters')
-            exit(1)
+        except paramiko.ssh_exception.AuthenticationException as e:
+            raise UserException('Connection failed: recheck your authentication and host URL parameters') from e
+        except paramiko.ssh_exception.SSHException as e:
+            raise UserException('Connection failed: recheck your host URL and port parameters') from e
+
         sftp = paramiko.SFTPClient.from_transport(conn)
-        return sftp, conn
+
+        self._connection = conn
+        self._sftp_client = sftp
+
+    def _close_connection(self):
+        self._sftp_client.close()
+        self._connection.close()
 
     def get_private_key(self, keystring):
         pkey = None
@@ -150,23 +168,22 @@ class Component(CommonInterface):
 
         return pkey
 
-    def _upload_file(self, input_file, sftp):
+    def _upload_file(self, input_file):
         params = self.configuration.parameters
 
         destination = self.get_output_destination(input_file)
         logging.info(f"File Source: {input_file}")
         logging.info(f"File Destination: {destination}")
         try:
-            self._try_to_execute_sftp_operation(sftp.put, input_file.full_path, destination)
-        except FileNotFoundError:
-            logging.exception(
+            self._try_to_execute_sftp_operation(self._sftp_client.put, input_file.full_path, destination)
+        except FileNotFoundError as e:
+            raise UserException(
                 f"Destination path: '{params[KEY_REMOTE_PATH]}' in SFTP Server not found,"
-                f" recheck the remote destination path")
-            exit(1)
-        except PermissionError:
-            logging.exception(f"Permission Error: you do not have permissions to write to '{params[KEY_REMOTE_PATH]}',"
-                              f" choose a different directory on the SFTP server")
-            exit(1)
+                f" recheck the remote destination path") from e
+        except PermissionError as e:
+            raise UserException(
+                f"Permission Error: you do not have permissions to write to '{params[KEY_REMOTE_PATH]}',"
+                f" choose a different directory on the SFTP server") from e
 
     def get_output_destination(self, input_file):
         params = self.configuration.parameters
@@ -184,7 +201,7 @@ class Component(CommonInterface):
         return destination
 
     @backoff.on_exception(backoff.expo,
-                          ConnectionError,
+                          (ConnectionError, FileNotFoundError, IOError),
                           max_tries=MAX_RETRIES)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
@@ -197,6 +214,9 @@ if __name__ == "__main__":
     try:
         comp = Component()
         comp.run()
+    except UserException as ue:
+        logging.exception(ue)
+        exit(1)
     except Exception as exc:
         logging.exception(exc)
         exit(2)
