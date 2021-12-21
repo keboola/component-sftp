@@ -84,9 +84,11 @@ class Component(CommonInterface):
         self._validate_parameters()
         params = self.configuration.parameters
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
+        port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
+        host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
 
-        self.connect_to_server(self.configuration.image_parameters[KEY_PORT],
-                               self.configuration.image_parameters[KEY_HOSTNAME],
+        self.connect_to_server(port,
+                               host,
                                params[KEY_USER],
                                params[KEY_PASSWORD],
                                pkey)
