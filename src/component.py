@@ -9,7 +9,7 @@ from datetime import datetime
 from io import StringIO
 from pathlib import Path
 from typing import Callable
-
+import socket
 import backoff
 import paramiko
 from keboola.component import CommonInterface
@@ -113,6 +113,8 @@ class Component(CommonInterface):
             raise UserException('Connection failed: recheck your authentication and host URL parameters') from e
         except paramiko.ssh_exception.SSHException as e:
             raise UserException('Connection failed: recheck your host URL and port parameters') from e
+        except socket.gaierror as e:
+            raise UserException('Connection failed: recheck your host URL and port parameters') from e
 
         sftp = paramiko.SFTPClient.from_transport(conn)
 
@@ -129,9 +131,9 @@ class Component(CommonInterface):
             keyfile = StringIO(keystring)
             try:
                 pkey = self._parse_private_key(keyfile)
-            except (paramiko.SSHException, IndexError):
+            except (paramiko.SSHException, IndexError) as e:
                 logging.exception("Private Key is invalid")
-                exit(1)
+                raise UserException("Failed to parse private Key") from e
         return pkey
 
     @staticmethod
@@ -167,14 +169,13 @@ class Component(CommonInterface):
             except (paramiko.SSHException, IndexError) as e:
                 logging.warning("Ed25519Key Private key invalid.")
                 raise e
-
         return pkey
 
     def _upload_file(self, input_file):
         params = self.configuration.parameters
 
         destination = self.get_output_destination(input_file)
-        logging.info(f"File Source: {input_file}")
+        logging.info(f"File Source: {input_file.full_path}")
         logging.info(f"File Destination: {destination}")
         try:
             self._try_to_execute_sftp_operation(self._sftp_client.put, input_file.full_path, destination)
@@ -195,12 +196,11 @@ class Component(CommonInterface):
             timestamp_suffix = "_" + str(datetime.utcnow().strftime('%Y%m%d%H%M%S'))
 
         file_path = params[KEY_REMOTE_PATH]
-        if not file_path[-1] == "/":
-            file_path = file_path + "/"
+        if file_path[-1] != "/":
+            file_path = f"{file_path}/"
 
         filename, file_extension = os.path.splitext(os.path.basename(input_file.name))
-        destination = file_path + filename + timestamp_suffix + file_extension
-        return destination
+        return file_path + filename + timestamp_suffix + file_extension
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, FileNotFoundError, IOError),
