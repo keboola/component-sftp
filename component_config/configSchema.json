@@ -37,6 +37,11 @@
 			"type": "string",
 			"title": "SFTP host URL",
 			"propertyOrder": 10
+		},
+		"disabled_algorithms": {
+			"type": "string",
+			"title": "Algorithms to disable",
+			"propertyOrder": 60
 		}
 	}
 }
