@@ -41,6 +41,7 @@
 		"disabled_algorithms": {
 			"type": "string",
 			"title": "Algorithms to disable",
+			"description": "The disabled_algorithms for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\" Find additional details at <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
 			"propertyOrder": 60
 		}
 	}
