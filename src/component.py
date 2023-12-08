@@ -89,7 +89,7 @@ class Component(CommonInterface):
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
         host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
 
-        if params[KEY_DISABLED_ALGORITHMS]:
+        if params.get(KEY_DISABLED_ALGORITHMS, False):
             disabled_algorithms = eval(params[KEY_DISABLED_ALGORITHMS])
         else:
             disabled_algorithms = {}
