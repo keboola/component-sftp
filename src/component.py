@@ -27,6 +27,8 @@ KEY_PRIVATE_KEY = '#private_key'
 KEY_HOSTNAME_IMG = 'sftp_host'
 KEY_PORT_IMG = 'sftp_port'
 
+KEY_DISABLED_ALGORITHMS = 'disabled_algorithms'
+
 KEY_DEBUG = 'debug'
 PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
 
@@ -87,11 +89,17 @@ class Component(CommonInterface):
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
         host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
 
+        if params[KEY_DISABLED_ALGORITHMS]:
+            disabled_algorithms = eval(params[KEY_DISABLED_ALGORITHMS])
+        else:
+            disabled_algorithms = {}
+
         self.connect_to_server(port,
                                host,
                                params[KEY_USER],
                                params[KEY_PASSWORD],
-                               pkey)
+                               pkey,
+                               disabled_algorithms)
         try:
             in_tables = self.get_input_tables_definitions()
             in_files = self.get_input_files_definitions(only_latest_files=True)
@@ -105,9 +113,9 @@ class Component(CommonInterface):
 
         logging.info("Done.")
 
-    def connect_to_server(self, port, host, user, password, pkey):
+    def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms):
         try:
-            conn = paramiko.Transport((host, port))
+            conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
             conn.connect(username=user, password=password, pkey=pkey)
         except paramiko.ssh_exception.AuthenticationException as e:
             raise UserException('Connection failed: recheck your authentication and host URL parameters') from e
