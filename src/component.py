@@ -5,11 +5,12 @@ Created on 10. 10. 2018
 '''
 import logging
 import os
+import socket
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
 from typing import Callable
-import socket
+
 import backoff
 import paramiko
 from keboola.component import CommonInterface
@@ -22,6 +23,7 @@ KEY_HOSTNAME = 'hostname'
 KEY_PORT = 'port'
 KEY_REMOTE_PATH = 'path'
 KEY_APPENDDATE = 'append_date'
+KEY_APPENDDATE_FORMAT = 'append_date_format'
 KEY_PRIVATE_KEY = '#private_key'
 # img parameter names
 KEY_HOSTNAME_IMG = 'sftp_host'
@@ -201,7 +203,8 @@ class Component(CommonInterface):
 
         timestamp_suffix = ''
         if params[KEY_APPENDDATE]:
-            timestamp_suffix = "_" + str(datetime.utcnow().strftime('%Y%m%d%H%M%S'))
+            timestamp = datetime.utcnow().strftime(params.get(KEY_APPENDDATE_FORMAT, '%Y%m%d%H%M%S'))
+            timestamp_suffix = f"_{timestamp}"
 
         file_path = params[KEY_REMOTE_PATH]
         if file_path[-1] != "/":
