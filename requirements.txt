@@ -2,4 +2,4 @@ paramiko>=2.7.2
 backoff
 mock
 freezegun
-keboola.component==1.2.0
+keboola.component==1.4.4

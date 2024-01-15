@@ -14,6 +14,7 @@ from typing import Callable
 import backoff
 import paramiko
 from keboola.component import CommonInterface
+from keboola.component.base import sync_action
 
 MAX_RETRIES = 5
 
@@ -71,13 +72,13 @@ class Component(CommonInterface):
         logging.info('Running version %s', APP_VERSION)
         logging.info('Loading configuration...')
 
-    def _validate_parameters(self):
+    def validate_connection_configuration(self):
         try:
-            self.validate_configuration(REQUIRED_PARAMETERS)
+            self.validate_configuration_parameters(REQUIRED_PARAMETERS)
             if self.configuration.image_parameters:
                 self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
             else:
-                self.validate_configuration([KEY_PORT, KEY_HOSTNAME])
+                self.validate_configuration_parameters([KEY_PORT, KEY_HOSTNAME])
         except ValueError as err:
             raise UserException(err) from err
 
@@ -85,7 +86,7 @@ class Component(CommonInterface):
         '''
         Main execution code
         '''
-        self._validate_parameters()
+        self.validate_connection_configuration()
         params = self.configuration.parameters
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
@@ -218,6 +219,31 @@ class Component(CommonInterface):
                           max_tries=MAX_RETRIES)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
+
+    @sync_action('testConnection')
+    def test_connection(self):
+        self.validate_connection_configuration()
+        params = self.configuration.parameters
+        pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
+        port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
+        host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
+
+        if params.get(KEY_DISABLED_ALGORITHMS, False):
+            disabled_algorithms = eval(params[KEY_DISABLED_ALGORITHMS])
+        else:
+            disabled_algorithms = {}
+        try:
+            self.connect_to_server(port,
+                                   host,
+                                   params[KEY_USER],
+                                   params[KEY_PASSWORD],
+                                   pkey,
+                                   disabled_algorithms)
+
+        except Exception:
+            raise
+        finally:
+            self._close_connection()
 
 
 """
