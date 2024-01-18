@@ -222,7 +222,10 @@ class Component(CommonInterface):
 
     @sync_action('testConnection')
     def test_connection(self):
-        self.validate_connection_configuration()
+        if self.configuration.image_parameters:
+            self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
+        else:
+            self.validate_configuration_parameters([KEY_PORT, KEY_HOSTNAME])
         params = self.configuration.parameters
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
