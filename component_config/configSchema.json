@@ -1,48 +1,53 @@
 {
-	"type": "object",
-	"title": "SFTP writer",
-	"required": [
-		"hostname",
-		"port",
-		"user",
-		"#pass",
-		"#private_key"
-	],
-	"properties": {
-		"port": {
-			"type": "integer",
-			"default": 22,
-			"title": "SFTP host port",
-			"propertyOrder": 20
-		},
-		"user": {
-			"type": "string",
-			"title": "SFTP user name",
-			"propertyOrder": 30
-		},
-		"#pass": {
-			"type": "string",
-			"title": "SFTP password",
-			"format": "password",
-			"propertyOrder": 40
-		},
-		"#private_key": {
-			"type": "string",
-			"format": "textarea",
-			"description": "Your SSH private key, including the BEGIN RSA .. part. If used, the password is ignored.",
-			"title": "SSH private key",
-			"propertyOrder": 50
-		},
-		"hostname": {
-			"type": "string",
-			"title": "SFTP host URL",
-			"propertyOrder": 10
-		},
-		"disabled_algorithms": {
-			"type": "string",
-			"title": "Algorithms to disable (Optional)",
-			"description": "The disabled_algorithms for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\" Find additional details at <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
-			"propertyOrder": 60
-		}
-	}
+  "type": "object",
+  "title": "SFTP writer",
+  "required": [
+    "hostname",
+    "port",
+    "user",
+    "#pass",
+    "#private_key"
+  ],
+  "properties": {
+    "port": {
+      "type": "integer",
+      "default": 22,
+      "title": "SFTP host port",
+      "propertyOrder": 20
+    },
+    "user": {
+      "type": "string",
+      "title": "SFTP user name",
+      "propertyOrder": 30
+    },
+    "#pass": {
+      "type": "string",
+      "title": "SFTP password",
+      "format": "password",
+      "propertyOrder": 40
+    },
+    "#private_key": {
+      "type": "string",
+      "format": "textarea",
+      "description": "Your SSH private key, including the BEGIN RSA .. part. If used, the password is ignored.",
+      "title": "SSH private key",
+      "propertyOrder": 50
+    },
+    "hostname": {
+      "type": "string",
+      "title": "SFTP host URL",
+      "propertyOrder": 10
+    },
+    "disabled_algorithms": {
+      "type": "string",
+      "title": "Algorithms to disable (Optional)",
+      "description": "The disabled_algorithms for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\" Find additional details at <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
+      "propertyOrder": 60
+    },
+    "test_connection": {
+      "type": "button",
+      "format": "test-connection",
+      "propertyOrder": 500
+    }
+  }
 }

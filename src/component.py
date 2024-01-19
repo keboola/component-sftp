@@ -8,12 +8,11 @@ import os
 import socket
 from datetime import datetime
 from io import StringIO
-from pathlib import Path
 from typing import Callable
 
 import backoff
 import paramiko
-from keboola.component import CommonInterface
+from keboola.component.base import sync_action, ComponentBase
 
 MAX_RETRIES = 5
 
@@ -43,41 +42,20 @@ class UserException(Exception):
     pass
 
 
-def get_local_data_path():
-    return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
-
-
-def get_data_folder_path():
-    data_folder_path = None
-    if not os.environ.get('KBC_DATADIR'):
-        data_folder_path = get_local_data_path()
-    return data_folder_path
-
-
-class Component(CommonInterface):
+class Component(ComponentBase):
     def __init__(self):
-        # for easier local project setup
-        data_folder_path = get_data_folder_path()
-        super().__init__(data_folder_path=data_folder_path)
-        if self.configuration.parameters.get(KEY_DEBUG):
-            self.set_debug_mode()
+        super().__init__()
 
         self._connection: paramiko.Transport = None
         self._sftp_client: paramiko.SFTPClient = None
 
-    @staticmethod
-    def set_debug_mode():
-        logging.getLogger().setLevel(logging.DEBUG)
-        logging.info('Running version %s', APP_VERSION)
-        logging.info('Loading configuration...')
-
-    def _validate_parameters(self):
+    def validate_connection_configuration(self):
         try:
-            self.validate_configuration(REQUIRED_PARAMETERS)
+            self.validate_configuration_parameters(REQUIRED_PARAMETERS)
             if self.configuration.image_parameters:
                 self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
             else:
-                self.validate_configuration([KEY_PORT, KEY_HOSTNAME])
+                self.validate_configuration_parameters([KEY_PORT, KEY_HOSTNAME])
         except ValueError as err:
             raise UserException(err) from err
 
@@ -85,7 +63,7 @@ class Component(CommonInterface):
         '''
         Main execution code
         '''
-        self._validate_parameters()
+        self.validate_connection_configuration()
         params = self.configuration.parameters
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
@@ -132,8 +110,10 @@ class Component(CommonInterface):
         self._sftp_client = sftp
 
     def _close_connection(self):
-        self._sftp_client.close()
-        self._connection.close()
+        if self._sftp_client:
+            self._sftp_client.close()
+        if self._connection:
+            self._connection.close()
 
     def get_private_key(self, keystring):
         pkey = None
@@ -219,6 +199,34 @@ class Component(CommonInterface):
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
 
+    @sync_action('testConnection')
+    def test_connection(self):
+        if self.configuration.image_parameters:
+            self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
+        else:
+            self.validate_configuration_parameters([KEY_PORT, KEY_HOSTNAME])
+        params = self.configuration.parameters
+        pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
+        port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
+        host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
+
+        if params.get(KEY_DISABLED_ALGORITHMS, False):
+            disabled_algorithms = eval(params[KEY_DISABLED_ALGORITHMS])
+        else:
+            disabled_algorithms = {}
+        try:
+            self.connect_to_server(port,
+                                   host,
+                                   params[KEY_USER],
+                                   params[KEY_PASSWORD],
+                                   pkey,
+                                   disabled_algorithms)
+
+        except Exception:
+            raise
+        finally:
+            self._close_connection()
+
 
 """
         Main entrypoint
@@ -226,9 +234,10 @@ class Component(CommonInterface):
 if __name__ == "__main__":
     try:
         comp = Component()
-        comp.run()
-    except UserException as ue:
-        logging.exception(ue)
+        # this triggers the run method by default and is controlled by the configuration.action parameter
+        comp.execute_action()
+    except UserException as exc:
+        logging.exception(exc)
         exit(1)
     except Exception as exc:
         logging.exception(exc)
