@@ -110,8 +110,10 @@ class Component(ComponentBase):
         self._sftp_client = sftp
 
     def _close_connection(self):
-        self._sftp_client.close()
-        self._connection.close()
+        if self._sftp_client:
+            self._sftp_client.close()
+        if self._connection:
+            self._connection.close()
 
     def get_private_key(self, keystring):
         pkey = None
