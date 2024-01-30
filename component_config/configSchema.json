@@ -44,6 +44,13 @@
       "description": "The disabled_algorithms for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\" Find additional details at <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
       "propertyOrder": 60
     },
+    "banner_timeout": {
+      "type": "integer",
+      "default": 15,
+      "title": "Banner timeout (Optional)",
+      "description": "Timeout to wait for SSH banner (Optional)",
+      "propertyOrder": 70
+    },
     "test_connection": {
       "type": "button",
       "format": "test-connection",
