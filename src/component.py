@@ -29,6 +29,8 @@ KEY_HOSTNAME_IMG = 'sftp_host'
 KEY_PORT_IMG = 'sftp_port'
 
 KEY_DISABLED_ALGORITHMS = 'disabled_algorithms'
+KEY_BANNER_TIMEOUT = 'banner_timeout'
+
 
 KEY_DEBUG = 'debug'
 PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
@@ -74,12 +76,15 @@ class Component(ComponentBase):
         else:
             disabled_algorithms = {}
 
+        banner_timeout = params.get(KEY_BANNER_TIMEOUT, 15)
+
         self.connect_to_server(port,
                                host,
                                params[KEY_USER],
                                params[KEY_PASSWORD],
                                pkey,
-                               disabled_algorithms)
+                               disabled_algorithms,
+                               banner_timeout)
         try:
             in_tables = self.get_input_tables_definitions()
             in_files = self.get_input_files_definitions(only_latest_files=True)
@@ -93,9 +98,10 @@ class Component(ComponentBase):
 
         logging.info("Done.")
 
-    def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms):
+    def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
+            conn.banner_timeout = banner_timeout
             conn.connect(username=user, password=password, pkey=pkey)
         except paramiko.ssh_exception.AuthenticationException as e:
             raise UserException('Connection failed: recheck your authentication and host URL parameters') from e
