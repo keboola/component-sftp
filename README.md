@@ -35,6 +35,16 @@ Password of the SFTP user. Use if you wan't to use the password authentication m
 
 Your SSH private key, including the `BEGIN RSA ..` part. If used, the password is ignored.
 
+## Algorithms to disable (optional)
+
+The disabled_algorithms for example: "{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}" Find additional details at [Paramiko documentation](https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms).
+
+## Banner timeout (optional)
+
+Timeout in seconds to wait for SSH banner, default value is 15. This parameter can solve issues related to establishing a connection, caused, for example, by server overload or high network latency.
+
+
+
 ### Remote destination path
 
 Remote destination path. e.g. existing remote folder, where all files will be stored. ex. `/home/user/mysftpfolder/`

@@ -48,7 +48,7 @@
       "type": "integer",
       "default": 15,
       "title": "Banner timeout (Optional)",
-      "description": "Timeout to wait for SSH banner (Optional)",
+      "description": "Timeout in seconds to wait for SSH banner, default value is 15. This parameter can solve issues related to establishing a connection, caused, for example, by server overload or high network latency.",
       "propertyOrder": 70
     },
     "test_connection": {
