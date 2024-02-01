@@ -215,6 +215,7 @@ class Component(ComponentBase):
         pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
         host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
+        banner_timeout = params.get(KEY_BANNER_TIMEOUT, 15)
 
         if params.get(KEY_DISABLED_ALGORITHMS, False):
             disabled_algorithms = eval(params[KEY_DISABLED_ALGORITHMS])
@@ -226,7 +227,8 @@ class Component(ComponentBase):
                                    params[KEY_USER],
                                    params[KEY_PASSWORD],
                                    pkey,
-                                   disabled_algorithms)
+                                   disabled_algorithms,
+                                   banner_timeout)
 
         except Exception:
             raise
