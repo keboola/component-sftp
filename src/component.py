@@ -98,6 +98,9 @@ class Component(ComponentBase):
 
         logging.info("Done.")
 
+    @backoff.on_exception(backoff.expo,
+                          (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
+                          max_tries=MAX_RETRIES)
     def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
@@ -116,10 +119,13 @@ class Component(ComponentBase):
         self._sftp_client = sftp
 
     def _close_connection(self):
-        if self._sftp_client:
-            self._sftp_client.close()
-        if self._connection:
-            self._connection.close()
+        try:
+            if self._sftp_client:
+                self._sftp_client.close()
+            if self._connection:
+                self._connection.close()
+        except Exception as e:
+            logging.warning(f"Failed to close connection: {e}")
 
     def get_private_key(self, keystring):
         pkey = None
@@ -200,7 +206,7 @@ class Component(ComponentBase):
         return file_path + filename + timestamp_suffix + file_extension
 
     @backoff.on_exception(backoff.expo,
-                          (ConnectionError, FileNotFoundError, IOError),
+                          (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
                           max_tries=MAX_RETRIES)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
