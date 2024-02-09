@@ -14,7 +14,7 @@ import backoff
 import paramiko
 from keboola.component.base import sync_action, ComponentBase
 
-MAX_RETRIES = 5
+MAX_RETRIES = 6
 
 KEY_USER = 'user'
 KEY_PASSWORD = '#pass'
@@ -103,6 +103,7 @@ class Component(ComponentBase):
                           max_tries=MAX_RETRIES)
     def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
+            logging.debug("Trying to connect to SFTP server...")
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
             conn.banner_timeout = banner_timeout
             conn.connect(username=user, password=password, pkey=pkey)
@@ -209,6 +210,7 @@ class Component(ComponentBase):
                           (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
                           max_tries=MAX_RETRIES)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
+        logging.debug("Trying to execute SFTP operation.")
         return operation(*args)
 
     @sync_action('testConnection')
@@ -251,8 +253,8 @@ if __name__ == "__main__":
         # this triggers the run method by default and is controlled by the configuration.action parameter
         comp.execute_action()
     except UserException as exc:
-        logging.exception(exc)
+        logging.error(exc, exc_info=True)
         exit(1)
     except Exception as exc:
-        logging.exception(exc)
+        logging.error(exc, exc_info=True)
         exit(2)
