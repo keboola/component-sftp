@@ -14,7 +14,9 @@ import backoff
 import paramiko
 from keboola.component.base import sync_action, ComponentBase
 
-MAX_RETRIES = 5
+logging.getLogger("paramiko").disabled = True
+
+MAX_RETRIES = 6
 
 KEY_USER = 'user'
 KEY_PASSWORD = '#pass'
@@ -38,6 +40,11 @@ PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
 REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP, KEY_REMOTE_PATH]
 
 APP_VERSION = '1.0.0'
+
+
+def backoff_hdlr(details):
+    print("Backing off {wait:0.1f} seconds after {tries} tries "
+          "calling function {target}".format(**details))
 
 
 class UserException(Exception):
@@ -100,7 +107,7 @@ class Component(ComponentBase):
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES)
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr)
     def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
@@ -108,8 +115,6 @@ class Component(ComponentBase):
             conn.connect(username=user, password=password, pkey=pkey)
         except paramiko.ssh_exception.AuthenticationException as e:
             raise UserException('Connection failed: recheck your authentication and host URL parameters') from e
-        except paramiko.ssh_exception.SSHException as e:
-            raise UserException('Connection failed: recheck your host URL and port parameters') from e
         except socket.gaierror as e:
             raise UserException('Connection failed: recheck your host URL and port parameters') from e
 
@@ -207,7 +212,7 @@ class Component(ComponentBase):
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES)
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
 
