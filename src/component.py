@@ -209,8 +209,8 @@ class Component(ComponentBase):
         return file_path + filename + timestamp_suffix + file_extension
 
     @backoff.on_exception(backoff.expo,
-                          (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr)
+                          (ConnectionError, IOError, paramiko.SSHException),
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
 
