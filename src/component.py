@@ -44,6 +44,10 @@ def backoff_hdlr(details):
                     "calling function {target}".format(**details))
 
 
+def giving_up_hdlr(details):
+    raise UserException("Too many retries, giving up calling {target}".format(**details))
+
+
 class UserException(Exception):
     pass
 
@@ -105,7 +109,7 @@ class Component(ComponentBase):
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2)
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2, on_giveup=giving_up_hdlr)
     def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
@@ -210,7 +214,7 @@ class Component(ComponentBase):
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2)
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2, on_giveup=giving_up_hdlr)
     def _try_to_execute_sftp_operation(self, operation: Callable, *args):
         return operation(*args)
 
