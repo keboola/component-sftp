@@ -14,8 +14,6 @@ import backoff
 import paramiko
 from keboola.component.base import sync_action, ComponentBase
 
-logging.getLogger("paramiko").disabled = True
-
 MAX_RETRIES = 6
 
 KEY_USER = 'user'
@@ -33,7 +31,6 @@ KEY_PORT_IMG = 'sftp_port'
 KEY_DISABLED_ALGORITHMS = 'disabled_algorithms'
 KEY_BANNER_TIMEOUT = 'banner_timeout'
 
-
 KEY_DEBUG = 'debug'
 PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
 
@@ -43,8 +40,8 @@ APP_VERSION = '1.0.0'
 
 
 def backoff_hdlr(details):
-    print("Backing off {wait:0.1f} seconds after {tries} tries "
-          "calling function {target}".format(**details))
+    logging.warning("Backing off {wait:0.1f} seconds after {tries} tries "
+                    "calling function {target}".format(**details))
 
 
 class UserException(Exception):
@@ -57,6 +54,7 @@ class Component(ComponentBase):
 
         self._connection: paramiko.Transport = None
         self._sftp_client: paramiko.SFTPClient = None
+        logging.getLogger("paramiko").level = logging.CRITICAL
 
     def validate_connection_configuration(self):
         try:
@@ -107,7 +105,7 @@ class Component(ComponentBase):
 
     @backoff.on_exception(backoff.expo,
                           (ConnectionError, FileNotFoundError, IOError, paramiko.SSHException),
-                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr)
+                          max_tries=MAX_RETRIES, on_backoff=backoff_hdlr, factor=2)
     def connect_to_server(self, port, host, user, password, pkey, disabled_algorithms, banner_timeout):
         try:
             conn = paramiko.Transport((host, port), disabled_algorithms=disabled_algorithms)
