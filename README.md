@@ -14,24 +14,27 @@ The components allows to write tables or files from the KBC Storage to any SFTP 
 **NOTE** that only the latest files matching the specified tag will be uploaded.
 
 # Configuration
+
+## Protocol
+Protocol to use
  
-## SFTP host URL
+## Host URL
 
-Your SFTP host URL
+Your host URL
 
-## SFTP host port
+## Host port
 
-SFTP port - by default `22`.
+Host port - by default `22`.
 
-## SFTP user name
+## User name
 
-Your SFTP user name.
+Your user name.
 
-## SFTP password
+## Password
 
-Password of the SFTP user. Use if you wan't to use the password authentication method.
+Password of the user. Use if you wan't to use the password authentication method.
 
-## SSH private key
+## SSH private key (only for SFTP)
 
 Your SSH private key, including the `BEGIN RSA ..` part. If used, the password is ignored.
 
