@@ -39,6 +39,7 @@ KEY_PROTOCOL = 'protocol'
 KEY_DEBUG = 'debug'
 PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
 
+TEST_CONNECTION_REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP]
 REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP, KEY_REMOTE_PATH]
 
 APP_VERSION = '1.0.0'
@@ -69,6 +70,12 @@ class MyFTP_TLS(ftplib.FTP_TLS):
         return conn, size
 
 
+class MyFTPIgnorePassiveAddresses(MyFTP_TLS):
+    def makepasv(self):
+        _, port = super().makepasv()
+        return self.host, port
+
+
 class Component(ComponentBase):
     def __init__(self):
         super().__init__()
@@ -78,9 +85,12 @@ class Component(ComponentBase):
         self._ftp_host: ftputil.FTPHost = None
         logging.getLogger("paramiko").level = logging.CRITICAL
 
-    def validate_connection_configuration(self):
+    def validate_connection_configuration(self, test_connection=False):
         try:
-            self.validate_configuration_parameters(REQUIRED_PARAMETERS)
+            if test_connection:
+                self.validate_configuration_parameters(TEST_CONNECTION_REQUIRED_PARAMETERS)
+            else:
+                self.validate_configuration_parameters(REQUIRED_PARAMETERS)
             if self.configuration.image_parameters:
                 self.validate_image_parameters([KEY_HOSTNAME_IMG, KEY_PORT_IMG])
             else:
@@ -281,7 +291,7 @@ class Component(ComponentBase):
 
     @sync_action('testConnection')
     def test_connection(self):
-        self.validate_connection_configuration()
+        self.validate_connection_configuration(test_connection=True)
 
         try:
             self.init_connection()
