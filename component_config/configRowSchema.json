@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "title": "SFTP writer",
+  "title": "SFTP Writer",
   "required": [
     "path",
     "append_date",
@@ -16,7 +16,7 @@
     "append_date": {
       "type": "number",
       "title": "Append timestamp",
-      "description": "Appends timestamp to result file name",
+      "description": "Appends a timestamp to the result file name.",
       "propertyOrder": 5200,
       "enum": [
         0,
@@ -33,7 +33,7 @@
     "append_date_format": {
       "type": "string",
       "title": "Date format of appended timestamp",
-      "description": "Date format as used in strftime() function",
+      "description": "Date format as used in the strftime() function",
       "propertyOrder": 5300,
       "options": {
         "dependencies": {
