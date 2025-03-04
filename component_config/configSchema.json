@@ -1,6 +1,6 @@
 {
   "type": "object",
-  "title": "SFTP writer",
+  "title": "SFTP Writer",
   "required": [
     "hostname",
     "port",
@@ -29,7 +29,7 @@
     "#private_key": {
       "type": "string",
       "format": "textarea",
-      "description": "Your SSH private key, including the BEGIN RSA .. part. If used, the password is ignored.",
+      "description": "Your private SSH key, including the BEGIN RSA ... section. If provided, the password will be ignored.",
       "title": "SSH private key",
       "propertyOrder": 50
     },
@@ -40,15 +40,15 @@
     },
     "disabled_algorithms": {
       "type": "string",
-      "title": "Algorithms to disable (Optional)",
-      "description": "The disabled_algorithms for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\" Find additional details at <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
+      "title": "Algorithms to disable (optional)",
+      "description": "Specifies disabled_algorithms, for example: \"{'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}\". Find additional details in the <a href='https://docs.paramiko.org/en/latest/api/transport.html?highlight=disabled_algorithms'>Paramiko documentation</a>.",
       "propertyOrder": 60
     },
     "banner_timeout": {
       "type": "integer",
       "default": 15,
-      "title": "Banner timeout (Optional)",
-      "description": "Timeout in seconds to wait for SSH banner, default value is 15. This parameter can solve issues related to establishing a connection, caused, for example, by server overload or high network latency.",
+      "title": "Banner timeout (optional)",
+      "description": "Specifies the timeout (in seconds) to wait for the SSH banner. The default value is 15. This parameter can solve connection issues caused by factors such as server overload or high network latency.",
       "propertyOrder": 70
     },
     "test_connection": {

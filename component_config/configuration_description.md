@@ -1,1 +1,1 @@
-**NOTE** that when using file input mapping, only the latest files matching the specified tag will be uploaded.
+**Note:** When using file input mapping, only the latest files that match the specified tag will be uploaded.
