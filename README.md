@@ -31,9 +31,9 @@ Your SFTP user name.
 
 Password of the SFTP user. Use if you wan't to use the password authentication method.
 
-## SSH private key
+## SSH key
 
-Your SSH private key, including the `BEGIN RSA ..` part. If used, the password is ignored.
+You can either insert private key (the complete content, including newlines), upload it from a file or let us generate a key pair for you. If used, the password is ignored.
 
 ## Algorithms to disable (optional)
 

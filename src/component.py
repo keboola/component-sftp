@@ -24,6 +24,9 @@ KEY_REMOTE_PATH = 'path'
 KEY_APPENDDATE = 'append_date'
 KEY_APPENDDATE_FORMAT = 'append_date_format'
 KEY_PRIVATE_KEY = '#private_key'
+SSH_ELEMENT = 'ssh'
+SSH_KEYS = 'keys'
+KEY_PRIVATE = '#private'
 # img parameter names
 KEY_HOSTNAME_IMG = 'sftp_host'
 KEY_PORT_IMG = 'sftp_port'
@@ -32,7 +35,7 @@ KEY_DISABLED_ALGORITHMS = 'disabled_algorithms'
 KEY_BANNER_TIMEOUT = 'banner_timeout'
 
 KEY_DEBUG = 'debug'
-PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD]
+PASS_GROUP = [KEY_PRIVATE_KEY, KEY_PASSWORD, SSH_ELEMENT]
 
 REQUIRED_PARAMETERS = [KEY_USER, PASS_GROUP, KEY_REMOTE_PATH]
 
@@ -76,7 +79,7 @@ class Component(ComponentBase):
         '''
         self.validate_connection_configuration()
         params = self.configuration.parameters
-        pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
+        pkey = self.get_private_key(params)
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
         host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
 
@@ -134,10 +137,11 @@ class Component(ComponentBase):
         except Exception as e:
             logging.warning(f"Failed to close connection: {e}")
 
-    def get_private_key(self, keystring):
+    def get_private_key(self, params):
+        keystring = params.get(KEY_PRIVATE_KEY) or params.get(SSH_ELEMENT, {}).get(SSH_KEYS, {}).get(KEY_PRIVATE)
         pkey = None
         if keystring:
-            keyfile = StringIO(keystring)
+            keyfile = StringIO(keystring.rstrip())
             try:
                 pkey = self._parse_private_key(keyfile)
             except (paramiko.SSHException, IndexError) as e:
@@ -225,7 +229,7 @@ class Component(ComponentBase):
         else:
             self.validate_configuration_parameters([KEY_PORT, KEY_HOSTNAME])
         params = self.configuration.parameters
-        pkey = self.get_private_key(params[KEY_PRIVATE_KEY])
+        pkey = self.get_private_key(params)
         port = self.configuration.image_parameters.get(KEY_PORT_IMG) or params[KEY_PORT]
         host = self.configuration.image_parameters.get(KEY_HOSTNAME_IMG) or params[KEY_HOSTNAME]
         banner_timeout = params.get(KEY_BANNER_TIMEOUT, 15)
