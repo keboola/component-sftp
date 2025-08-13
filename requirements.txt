@@ -1,4 +1,4 @@
-paramiko>=2.7.2
+paramiko==3.5.1
 backoff
 mock
 freezegun
