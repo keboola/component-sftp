@@ -1,0 +1,10 @@
+{
+  "parameters": {
+    "port": 22,
+    "user": "fakeuser",
+    "hostname": "fakehost",
+    "#private_key": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQR2XDVndS3a75jo5q1gLgiGgEaNFjzv\nxBRefrMMmi1QGj6X3H0sPJ8BDdbm+bL+GaKj0fTBloC5SuMMqRW85ZDmAAAAsDeYOvI3mD\nryAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHZcNWd1LdrvmOjm\nrWAuCIaARo0WPO/EFF5+swyaLVAaPpfcfSw8nwEN1ub5sv4ZoqPR9MGWgLlK4wypFbzlkO\nYAAAAgR9ooXptoDu1/tEVFP7id8kLguMCyewyqgOUNE2RtMZsAAAASdGhyb3dhd2F5LXRl\nc3Qta2V5AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----",
+    "path": "/path/",
+    "append_date": "false"
+  }
+}

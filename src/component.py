@@ -93,7 +93,7 @@ class Component(ComponentBase):
         self.connect_to_server(port,
                                host,
                                params[KEY_USER],
-                               params[KEY_PASSWORD],
+                               params.get(KEY_PASSWORD),
                                pkey,
                                disabled_algorithms,
                                banner_timeout)
@@ -158,11 +158,12 @@ class Component(ComponentBase):
         try:
             pkey = paramiko.RSAKey.from_private_key(keyfile)
         except paramiko.SSHException:
-            logging.warning("RSS Private key invalid, trying DSS.")
+            logging.warning("RSA Private key invalid, trying DSS.")
             failed = True
         # DSS
         if failed:
             try:
+                keyfile.seek(0)
                 pkey = paramiko.DSSKey.from_private_key(keyfile)
                 failed = False
             except (paramiko.SSHException, IndexError):
@@ -171,6 +172,7 @@ class Component(ComponentBase):
         # ECDSAKey
         if failed:
             try:
+                keyfile.seek(0)
                 pkey = paramiko.ECDSAKey.from_private_key(keyfile)
                 failed = False
             except (paramiko.SSHException, IndexError):
@@ -179,10 +181,12 @@ class Component(ComponentBase):
         # Ed25519Key
         if failed:
             try:
+                keyfile.seek(0)
                 pkey = paramiko.Ed25519Key.from_private_key(keyfile)
-            except (paramiko.SSHException, IndexError) as e:
+                failed = False
+            except (paramiko.SSHException, IndexError):
                 logging.warning("Ed25519Key Private key invalid.")
-                raise e
+                raise
         return pkey
 
     def _upload_file(self, input_file):
@@ -243,7 +247,7 @@ class Component(ComponentBase):
             self.connect_to_server(port,
                                    host,
                                    params[KEY_USER],
-                                   params[KEY_PASSWORD],
+                                   params.get(KEY_PASSWORD),
                                    pkey,
                                    disabled_algorithms,
                                    banner_timeout)
