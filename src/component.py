@@ -184,9 +184,9 @@ class Component(ComponentBase):
                 keyfile.seek(0)
                 pkey = paramiko.Ed25519Key.from_private_key(keyfile)
                 failed = False
-            except (paramiko.SSHException, IndexError) as e:
+            except (paramiko.SSHException, IndexError):
                 logging.warning("Ed25519Key Private key invalid.")
-                raise e
+                raise
         return pkey
 
     def _upload_file(self, input_file):
