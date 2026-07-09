@@ -183,6 +183,7 @@ class Component(ComponentBase):
             try:
                 keyfile.seek(0)
                 pkey = paramiko.Ed25519Key.from_private_key(keyfile)
+                failed = False
             except (paramiko.SSHException, IndexError) as e:
                 logging.warning("Ed25519Key Private key invalid.")
                 raise e

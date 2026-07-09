@@ -9,12 +9,35 @@ from os import path
 from os.path import dirname
 
 import mock
+import paramiko
 from freezegun import freeze_time
 
-from src.component import Component
+from src.component import Component, UserException
 
 TEST_DIR = path.join(dirname(path.realpath(__file__)), 'test_data')
 TEST_DIR_TIMESTAMP = path.join(dirname(path.realpath(__file__)), 'test_data_timestamp')
+TEST_DIR_KEYONLY = path.join(dirname(path.realpath(__file__)), 'test_data_keyonly')
+
+# Throwaway keys generated only for these tests (never used against a real host).
+# They exercise the non-RSA fallback parsers, which only work because
+# _parse_private_key rewinds the buffer (keyfile.seek(0)) between attempts.
+ECDSA_PRIVATE_KEY = """-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS
+1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQR2XDVndS3a75jo5q1gLgiGgEaNFjzv
+xBRefrMMmi1QGj6X3H0sPJ8BDdbm+bL+GaKj0fTBloC5SuMMqRW85ZDmAAAAsDeYOvI3mD
+ryAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHZcNWd1LdrvmOjm
+rWAuCIaARo0WPO/EFF5+swyaLVAaPpfcfSw8nwEN1ub5sv4ZoqPR9MGWgLlK4wypFbzlkO
+YAAAAgR9ooXptoDu1/tEVFP7id8kLguMCyewyqgOUNE2RtMZsAAAASdGhyb3dhd2F5LXRl
+c3Qta2V5AQIDBAUG
+-----END OPENSSH PRIVATE KEY-----"""
+
+ED25519_PRIVATE_KEY = """-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACAQtEzIY06QrD9dJunJ0qMhs1slG4pTMK7ilsoF3OYzmwAAAJjmoJLD5qCS
+wwAAAAtzc2gtZWQyNTUxOQAAACAQtEzIY06QrD9dJunJ0qMhs1slG4pTMK7ilsoF3OYzmw
+AAAEAHiBSJY4Gx4AxT3Z/T2QChbEAvBNLBBytxvJyBnBlCRxC0TMhjTpCsP10m6cnSoyGz
+WyUbilMwruKWygXc5jObAAAAEnRocm93YXdheS10ZXN0LWtleQECAw==
+-----END OPENSSH PRIVATE KEY-----"""
 
 
 class TestComponent(unittest.TestCase):
@@ -46,10 +69,10 @@ class TestComponent(unittest.TestCase):
         self.assertEqual(output_destination, "/path/test_2010-10-10-00:00:00.csv")
 
     def test_parse_private_key_throws_error_on_invalid_key(self):
-        with self.assertRaises(IndexError):
-            self.comp.get_private_key({"#private_key":"key"})
+        with self.assertRaises(UserException):
+            self.comp.get_private_key({"#private_key": "key"})
 
-    def test_parse_private_key_throws_error_on_invalid_key(self):
+    def test_parse_private_key_rsa(self):
         key = self.comp.get_private_key({"#private_key":
             "-----BEGIN RSA PRIVATE KEY-----\nMIIEogIBAAKCAQEAsH4Y5UUUCHiD7OkNEjHhZeqOnbIv2/Sr3jzz+DrkGvAlEGwT"
             "\n7btrqWuqZT/cX3x1B0wiMqu3zMC+78Gy5bdNau7BJpN5FjwAzzDKVArR47ZIlyKO\nKGhRvafq2pZGQh9YUYsECzA2yoJdJTMfc"
@@ -77,6 +100,31 @@ class TestComponent(unittest.TestCase):
     def test_get_private_key_with_none(self):
         key = self.comp.get_private_key({})
         self.assertEqual(key, None)
+
+    def test_parse_private_key_non_rsa_fallback(self):
+        # The RSA parser consumes the buffer; without the seek(0) rewind between
+        # attempts, these non-RSA keys would fail to parse. Guards that fix.
+        cases = [
+            (ECDSA_PRIVATE_KEY, paramiko.ECDSAKey),
+            (ED25519_PRIVATE_KEY, paramiko.Ed25519Key),
+        ]
+        for keystring, expected_type in cases:
+            with self.subTest(key_type=expected_type.__name__):
+                key = self.comp.get_private_key({"#private_key": keystring})
+                self.assertIsInstance(key, expected_type)
+
+    @mock.patch.dict(os.environ, {'KBC_DATADIR': TEST_DIR_KEYONLY})
+    @mock.patch.object(Component, 'connect_to_server')
+    def test_key_only_config_uses_none_password(self, mock_connect):
+        # A key-only config has no '#pass'; run()/test_connection() must not raise
+        # KeyError and must call connect_to_server with password=None (bug #2).
+        comp = Component()
+        comp.test_connection()
+        mock_connect.assert_called_once()
+        args = mock_connect.call_args.args
+        # signature: (port, host, user, password, pkey, disabled_algorithms, banner_timeout)
+        self.assertIsNone(args[3])
+        self.assertIsInstance(args[4], paramiko.ECDSAKey)
 
 
 if __name__ == "__main__":
